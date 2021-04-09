@@ -3,6 +3,9 @@ import argparse
 import numpy as np
 from pathlib import Path
 
+SAMPLE_RATE = 44100
+CHUNK_DURATION_SECS = 1
+
 parser = argparse.ArgumentParser(description='Train the transcription model with your own data.')
 parser.add_argument('-i', '--input-dir', required=True, help='a path to the directory containing the audio files of each speaker.')
 args = parser.parse_args()
@@ -19,8 +22,19 @@ def get_mfcc_of_chunks(chunks, sample_rate):
         mfcc.append(librosa.feature.mfcc(chunk, sample_rate, n_mfcc=12))
     return mfcc
 
+def load_training_files(directory):
+    files = directory.glob('*[a-zA-Z0-9].wav')
+    for file in files:
+        print(file.name)
+
+
 def main():
-    print("hello")
+    input_directory = Path(args.input_dir)
+
+    if input_directory.exists():
+        load_training_files(input_directory)
+    else:
+        print("Error: Input directory provided does not exist...")
 
 if __name__ == "__main__":
     main()
