@@ -1,7 +1,9 @@
 import librosa
 import argparse
+import math
 import numpy as np
 from pathlib import Path
+from sklearn.model_selection import train_test_split
 
 SAMPLE_RATE = 44100
 CHUNK_DURATION_SECS = 1
@@ -23,13 +25,15 @@ def get_mfcc_of_chunks(chunks, sample_rate):
     return mfcc
 
 def balance_audio_length(audio_files):
-    minimum_duration = len(audio_files[0]["audio_data"])
+    minimum_duration = math.floor(librosa.get_duration(audio_files[0]["audio_data"], SAMPLE_RATE))
     for person in audio_files:
-        if len(person["audio_data"]) < minimum_duration:
-            minimum_duration = len(person["audio_data"])
+        if math.floor(librosa.get_duration(person["audio_data"])) < minimum_duration:
+            minimum_duration = math.floor(librosa.get_duration(person["audio_data"]))
+
+    num_of_samples = librosa.time_to_samples(minimum_duration, SAMPLE_RATE)
 
     for person in audio_files:
-        person["audio_data"] = person["audio_data"][0:minimum_duration]
+        person["audio_data"] = person["audio_data"][0:num_of_samples]
     
     return audio_files
 
@@ -43,7 +47,7 @@ def load_training_files(directory):
     for file in files:
         print("- Loading " + file.name)
         audio, sr = librosa.load(file, sr=SAMPLE_RATE, mono=True)
-        audio_files.append({"name": file.name, "audio_data": audio})
+        audio_files.append({"name": file.name[:-4], "audio_data": audio})
 
     return audio_files
 
@@ -55,15 +59,36 @@ def preprocess(audio_files):
     for person in audio_files:
         print(" - Preprocessing audio for " +  person["name"])
         chunks = list(split_to_chunks(person["audio_data"], SAMPLE_RATE, CHUNK_DURATION_SECS))
-        mfccs = get_mfcc_of_chunks(chunks, SAMPLE_RATE)
+        mfcc = get_mfcc_of_chunks(chunks, SAMPLE_RATE)
         person['chunks'] = chunks
-        person['mfccs'] = mfccs
+        person['mfcc'] = mfcc
     
     return audio_files
 
 def compile_dataset(preprocessed_audio):
     print("Compiling dataset from audio samples...")
-    
+    # mfcc = preprocessed_audio[0]["mfcc"]
+    # data = np.array(mfcc, dtype=object)
+    # data = data.reshape(len(mfcc), len(mfcc[0])*len(mfcc[0][0]))
+
+    # array = np.array(preprocessed_audio[0]["mfcc"], dtype="object")
+    compiled_mfcc_list = []
+    labels_list = []
+    for person in preprocessed_audio:
+        for sample in person["mfcc"]:
+            compiled_mfcc_list.append(sample)
+            labels_list.append(person["name"])
+
+    data = np.array(compiled_mfcc_list)
+    labels = np.array(labels_list)
+
+    data = data.reshape(len(data), len(data[0])*len(data[0][0]))
+    print(data.shape)
+
+    idx = np.random.permutation(len(data))
+    x,y = data[idx], labels[idx]
+
+    return train_test_split(x, y)
 
 def main():
     input_directory = Path(args.input_dir)
