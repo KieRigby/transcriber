@@ -24,17 +24,33 @@ def get_mfcc_of_chunks(chunks, sample_rate):
 
 def load_training_files(directory):
     files = directory.glob('*[a-zA-Z0-9].wav')
-    for file in files:
-        print(file.name)
 
+    print("Loading Training Data...")
+
+    audio_files = []
+
+    for file in files:
+        print("- Loading " + file.name)
+        audio, sr = librosa.load(file, sr=SAMPLE_RATE, mono=True)
+        audio_files.append({"name": file.name, "data": audio})
+
+    return audio_files
+
+def preprocess(audio):
+    print(audio)
 
 def main():
     input_directory = Path(args.input_dir)
 
     if input_directory.exists():
-        load_training_files(input_directory)
+        audio_files = load_training_files(input_directory)
+
+        if (len(audio_files) > 0):
+            preprocessed_audio = preprocess(audio_files)
+        else:
+            print("Error: No valid audio files found in directory")
     else:
-        print("Error: Input directory provided does not exist...")
+        print("Error: Input directory provided does not exist")
 
 if __name__ == "__main__":
     main()
