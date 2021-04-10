@@ -1,9 +1,12 @@
 import librosa
 import argparse
 import math
+import joblib
 import numpy as np
 from pathlib import Path
 from sklearn.model_selection import train_test_split
+from sklearn import svm
+from sklearn.metrics import accuracy_score
 
 SAMPLE_RATE = 44100
 CHUNK_DURATION_SECS = 1
@@ -67,11 +70,6 @@ def preprocess(audio_files):
 
 def compile_dataset(preprocessed_audio):
     print("Compiling dataset from audio samples...")
-    # mfcc = preprocessed_audio[0]["mfcc"]
-    # data = np.array(mfcc, dtype=object)
-    # data = data.reshape(len(mfcc), len(mfcc[0])*len(mfcc[0][0]))
-
-    # array = np.array(preprocessed_audio[0]["mfcc"], dtype="object")
     compiled_mfcc_list = []
     labels_list = []
     for person in preprocessed_audio:
@@ -83,12 +81,25 @@ def compile_dataset(preprocessed_audio):
     labels = np.array(labels_list)
 
     data = data.reshape(len(data), len(data[0])*len(data[0][0]))
-    print(data.shape)
 
     idx = np.random.permutation(len(data))
     x,y = data[idx], labels[idx]
 
     return train_test_split(x, y)
+
+def train_model(x_train, y_train):
+    print("Training model...")
+    model = svm.SVC()
+    model.fit(x_train, y_train)
+    return model
+
+def calculate_accuracy(model, x_test, y_test):
+    y_pred = model.predict(x_test)
+    return accuracy_score(y_test, y_pred)
+
+def save_model(model, model_path):
+    print("Saving model to: " + str(model_path))
+    joblib.dump(model, model_path)
 
 def main():
     input_directory = Path(args.input_dir)
@@ -99,6 +110,15 @@ def main():
         if (len(audio_files) > 0):
             preprocessed_audio = preprocess(audio_files)
             x_train, x_test, y_train, y_test = compile_dataset(preprocessed_audio)
+            model = train_model(x_train, y_train)
+            print("Model trained with accuracy: ", calculate_accuracy(model, x_test, y_test))
+            model_path = Path.cwd() / 'model' / 'speaker_detection.model'
+            model_path.parents[0].mkdir(parents=True, exist_ok=True)
+            try:
+                save_model(model, model_path)
+                print("Model saved successfully!")
+            except:
+                print("Model not saved!")
         else:
             print("Error: No valid audio files found in directory")
     else:
