@@ -1,0 +1,3 @@
+[submodule "libs/pocketsphinx-python"]
+	path = libs/pocketsphinx-python
+	url = https://github.com/bambocher/pocketsphinx-python
