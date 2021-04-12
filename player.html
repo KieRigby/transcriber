@@ -1,0 +1,74 @@
+<html>
+    <head>
+
+    </head>
+    <body>
+        
+        <audio id="audioPlayer">
+            <source src="audio/meeting_snippet3.wav" type="audio/wav">
+            Your browser does not support the audio element.
+        </audio>
+
+        <p>Select transcript file:</p>
+        <input type="file" id="fileSelector">
+
+        <button onclick="playAudio()" type="button" id="playButton" disabled>Play Audio</button>
+        <button onclick="pauseAudio()" type="button" id="pauseButton" disabled>Pause Audio</button> 
+
+        <h1 id="speakerName"></h1>
+
+        <script>
+            var player = document.getElementById("audioPlayer"); 
+            var playButton = document.getElementById("playButton"); 
+            var pauseButton = document.getElementById("pauseButton"); 
+            var speaker = document.getElementById("speakerName"); 
+            const fileSelector = document.getElementById('fileSelector');
+
+            chunks = []
+            current_speaker_index = 0
+
+            function setSpeaker(newSpeaker) {
+                speaker.innerHTML = newSpeaker
+            }
+
+            
+            
+            fileSelector.addEventListener('change', e => {
+                var file = fileSelector.files[0];
+
+                var reader = new FileReader();
+        
+                reader.onload = function(e) {
+                    var content = reader.result;
+
+                    playButton.disabled = false;
+                    pauseButton.disabled = false;
+
+                    chunks = content.split("\n")
+                }
+                
+                reader.readAsText(file);
+            });
+
+            function playAudio() { 
+                player.play(); 
+                if (current_speaker_index < chunks.length){
+                    setSpeaker(chunks[current_speaker_index])
+                    current_speaker_index++;
+                }
+                setInterval(() => {
+                    if (current_speaker_index < chunks.length){
+                        setSpeaker(chunks[current_speaker_index])
+                        current_speaker_index++;
+                    }
+                }, 1000)
+            } 
+            
+            function pauseAudio() { 
+              player.pause(); 
+              clearInterval()
+            } 
+        </script>
+
+    </body>
+</html>

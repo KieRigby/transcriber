@@ -105,7 +105,7 @@ def main():
                 save_model(model, model_path)
                 print("Model saved successfully!")
             except:
-                print("Model not saved!")
+                print("Error: Model not saved!")
         else:
             print("Error: No valid audio files found in directory")
     else:
